@@ -9,6 +9,9 @@ struct trace_state {
     struct syscall_pairer pairer;
 };
 
+
+// Esta funcao e chamada pelo runtime para cada evento de syscall.
+//Dependendo do tipo de evento, ela formata de uma forma especifica. Caso o evento não esteja completo, ela o ignora.
 static void trace_observer(const struct syscall_event *ev, void *userdata)
 {
     struct trace_state *state = userdata;
@@ -37,7 +40,7 @@ int main(int argc, char **argv)
     struct trace_state state = {0};
     int rc;
 
-    rc = parse_args(argc, argv, &opts);
+    rc = parse_args(argc, argv, &opts); //argc --> contador argumentos recebidos, argv --> vetor de strings com os argumentos, opts --> estrutura onde serao armazenadas as opcoes de trace
     if (rc > 0) {
         return 0;
     }
