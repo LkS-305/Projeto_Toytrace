@@ -4,6 +4,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+
+//encontra onde acaba o comando e começa o separador 
 static int find_separator(int argc, char **argv)
 {
     int i;
@@ -17,6 +19,7 @@ static int find_separator(int argc, char **argv)
     return -1;
 }
 
+//manual de uso do comando
 void print_usage(FILE *out, const char *prog)
 {
     fprintf(out,
@@ -38,6 +41,7 @@ int parse_args(int argc, char **argv, struct trace_options *opts)
 
     memset(opts, 0, sizeof(*opts));
 
+    //se for help ou -h ele imprime o manual anteriormente definido nesse arquivo
     if (argc < 2 || strcmp(argv[1], "--help") == 0 || strcmp(argv[1], "-h") == 0) {
         print_usage(stdout, argv[0]);
         return 1;
@@ -48,7 +52,9 @@ int parse_args(int argc, char **argv, struct trace_options *opts)
         return -1;
     }
 
+    //descobre onde termina -- e começa o programa alvo
     sep = find_separator(argc, argv);
+
     if (sep < 0 || sep + 1 >= argc) {
         fprintf(stderr, "erro: informe o programa alvo depois de --\n");
         return -1;
@@ -63,6 +69,7 @@ int parse_args(int argc, char **argv, struct trace_options *opts)
         }
     }
 
+    //define programa alvo
     opts->target_argv = &argv[sep + 1];
     return 0;
 }
