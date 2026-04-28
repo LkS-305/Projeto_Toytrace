@@ -4,14 +4,16 @@
 
 #include <stdio.h>
 
+//esse struct guarda o estado do do trace
 struct trace_state {
-    int raw_events;
-    struct syscall_pairer pairer;
+    int raw_events; //indica se usou --raw_events na chamada do programa
+    struct syscall_pairer pairer; //guarda informações para juntar entrada e saída da syscall
 };
 
 
 // Esta funcao e chamada pelo runtime para cada evento de syscall.
 //Dependendo do tipo de evento, ela formata de uma forma especifica. Caso o evento não esteja completo, ela o ignora.
+//const struct syscall_event *ev yscall guarda syscall, argumentos, retorno, se é entrada ou saída
 static void trace_observer(const struct syscall_event *ev, void *userdata)
 {
     struct trace_state *state = userdata;
@@ -19,17 +21,20 @@ static void trace_observer(const struct syscall_event *ev, void *userdata)
     char line[512];
     int ready;
 
+    //se usou --raw_events entra nesse if e imprime a sair sem formatação
     if (state->raw_events) {
         student_debug_raw_event(ev, line, sizeof(line));
         puts(line);
         return;
     }
 
+    //tenta juntar as informações da entrada e saída da syscall
     ready = student_pair_syscall(&state->pairer, ev, &completed);
     if (ready <= 0) {
         return;
     }
 
+    //quando junta chega nessa linha e formata para imprimir na tela
     student_format_event(&completed, line, sizeof(line));
     puts(line);
 }
