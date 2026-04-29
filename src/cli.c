@@ -52,14 +52,16 @@ int parse_args(int argc, char **argv, struct trace_options *opts)
         return -1;
     }
 
-    //descobre onde termina -- e começa o programa alvo
+    //descobre a posição onde termina -- e começa o programa alvo
     sep = find_separator(argc, argv);
 
+    //se nao achou o --
     if (sep < 0 || sep + 1 >= argc) {
         fprintf(stderr, "erro: informe o programa alvo depois de --\n");
         return -1;
     }
 
+    //raw_events é um comando que mostra a chamada de sistema bruta, por isso se chamar raw_events ele printa sem ajustes, só o bruto
     for (i = 2; i < sep; i++) {
         if (strcmp(argv[i], "--raw-events") == 0) {
             opts->raw_events = 1;
