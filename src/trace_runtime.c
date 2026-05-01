@@ -13,10 +13,11 @@
 #error "Este runtime didatico suporta apenas Linux x86_64."
 #endif
 
+//transforma os registradores da CPU em um evento do toytrace, os registradores mostram qual syscall foi chamada, quais argumentos foram passados, qual foi o retorno
 static void fill_event_from_regs(pid_t pid,
-                                 int entering,
-                                 const struct user_regs_struct *regs,
-                                 struct syscall_event *ev)
+                                 int entering, //identifica se ta na entrada ou saida da syscall
+                                 const struct user_regs_struct *regs, //onde estarão os registradores lidos do processo filho
+                                 struct syscall_event *ev) //struct em q guardaremos os dados organizados
 {
     /*
      * TODO Semana 4:
@@ -30,10 +31,13 @@ static void fill_event_from_regs(pid_t pid,
      * - ev->entering deve copiar o parametro entering.
      */
     memset(ev, 0, sizeof(*ev));
+    //guardando qual processo fez a syscall e se é entrada ou saída
     ev->pid = pid;
     ev->entering = entering;
 }
 
+//aqui criamos o processo que será monitorado
+//char *const argv[] - programa alvo e seus argumentos
 static pid_t launch_tracee(char *const argv[])
 {
     /*
@@ -56,6 +60,7 @@ static pid_t launch_tracee(char *const argv[])
     return -1;
 }
 
+//pai espera o filho parar pela primeira vez quando o filho fizer SIGSTOP para ent o pai configurar o ptrace antes do filho executar o programa alvo
 static int wait_for_initial_stop(pid_t child)
 {
     /*
@@ -70,6 +75,7 @@ static int wait_for_initial_stop(pid_t child)
     return -1;
 }
 
+//onde configurar opções do ptrace
 static int configure_trace_options(pid_t child)
 {
     /*
@@ -82,6 +88,7 @@ static int configure_trace_options(pid_t child)
     return -1;
 }
 
+//mandar o filho continuar rodando até chegar na próxima syscall.
 static int resume_until_next_syscall(pid_t child, int signal_to_deliver)
 {
     /*
@@ -96,6 +103,7 @@ static int resume_until_next_syscall(pid_t child, int signal_to_deliver)
     return -1;
 }
 
+//espera o filho parar e identifica o motivo da parada (syscall, término ou erro)
 static int wait_for_syscall_stop(pid_t child, int *status)
 {
     /*
@@ -118,6 +126,7 @@ static int wait_for_syscall_stop(pid_t child, int *status)
     return -1;
 }
 
+//função principal
 int trace_program(char *const argv[],
                   trace_observer_fn observer,
                   void *userdata)
@@ -126,16 +135,19 @@ int trace_program(char *const argv[],
     int status = 0;
     int entering = 1;
 
+    //confere se tem programa alvo
     if (argv == NULL || argv[0] == NULL) {
         fprintf(stderr, "erro: programa alvo ausente\n");
         return -1;
     }
 
+    //cria o processo
     child = launch_tracee(argv);
     if (child < 0) {
         return -1;
     }
 
+    //espera o filho parar
     if (wait_for_initial_stop(child) < 0) {
         return -1;
     }
@@ -153,14 +165,17 @@ int trace_program(char *const argv[],
         struct syscall_event ev;
         int stop_kind;
 
+        //confere se o processo terminou ou parou em uma syscall
         stop_kind = wait_for_syscall_stop(child, &status);
         if (stop_kind < 0) {
             return -1;
         }
+        //se o filho terminou normalmente, retorna o código de saída dele
         if (stop_kind == 0) {
             if (WIFEXITED(status)) {
                 return WEXITSTATUS(status);
             }
+            //se filho morreu por sinal, retorna um código baseado nisso
             if (WIFSIGNALED(status)) {
                 return 128 + WTERMSIG(status);
             }
@@ -174,13 +189,18 @@ int trace_program(char *const argv[],
          * Depois chame fill_event_from_regs() e observer().
          */
         memset(&regs, 0, sizeof(regs));
+        // monta um evento de syscall com os registradores guardados
         fill_event_from_regs(child, entering, &regs, &ev);
+
+        //chama o callback para formatar e imprimir (mas so imprime se ja tem entrada e saida registrados)
         if (observer != NULL) {
             observer(&ev, userdata);
         }
 
+        //alterna entre entrada e saída da syscall. quando é entrada o entering fica =1 e saida fica =0
         entering = !entering;
 
+        //manda continuar até a próxima syscall
         if (resume_until_next_syscall(child, 0) < 0) {
             return -1;
         }
