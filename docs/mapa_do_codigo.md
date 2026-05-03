@@ -27,4 +27,7 @@ O runtime é responsável pelo controle do processo monitorado (criação, execu
 
 
 • qual TODO aparece primeiro ao executar o scaffold;
+O TODO impresso é: "erro: TODO Semana 2: implementar launch_tracee()\n", encontrado no arquivo trace_runtime
+
 • qual é a principal dúvida técnica do grupo neste momento.
+Atualmente, a nossa principal dúvida técnica é em relação a como é feita a coordenação de todas as chamadas de função nos diferentes arquivos, sem que ocorra qualquer tipo de conflito. Além disso, ficamos com certa dificuldade de compreensão devido a todas as diferentes structs utilizadas
